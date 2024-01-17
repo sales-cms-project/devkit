@@ -1,0 +1,45 @@
+version: '3.3'
+services:
+  db:
+    image: mysql:8.0.23
+    environment:
+      MYSQL_DATABASE: 'db'
+      MYSQL_ROOT_PASSWORD: 'root'
+      TZ: 'UTC'
+    ports:
+      - '3306:3306'
+    expose:
+      - '3306'
+    volumes:
+      - database_volume:/var/lib/mysql
+    healthcheck:
+      test: mysqladmin --user=$$MYSQL_USER --password=$$MYSQL_ROOT_PASSWORD status
+      interval: 30s
+      timeout: 12s
+      retries: 10
+    networks:
+      backend:
+  ms_auth:
+    build: 
+      context: ../../ms-auth
+      dockerfile: local.Dockerfile
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - '../../ms-auth:/app'
+      - /app/node_modules/
+    ports:
+      - 3003:3003
+    expose:
+      - 3003
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - HTTP_HOST=0.0.0.0:3003
+    networks:
+      backend:
+volumes:
+  database_volume:
+networks:
+  backend:
